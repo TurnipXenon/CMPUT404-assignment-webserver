@@ -1,6 +1,6 @@
 #  coding: utf-8 
 import socketserver
-
+from os import path
 
 # Copyright 2013 Abram Hindle, Eddie Antonio Santos
 # 
@@ -40,9 +40,26 @@ class MyWebServer(socketserver.BaseRequestHandler):
         print(f"Got a request of: {top_str}\n")
         # todo(TurnipXenon): protect!!!
         raw_addr = top_str[1]
+        if raw_addr == "/":
+            raw_addr = "/index.html"
         data = None
-        with open(f"www/{raw_addr}", "r") as file:
-            data = file.read()
+        if path.exists(f"www/{raw_addr}"):
+            with open(f"www/{raw_addr}", "r") as file:
+                data = file.read()
+        else:
+            # TODO(TURNIPXENON): fix response!!!
+            response = f"""HTTP/1.1 404 NOT_FOUND
+            Server: Apache
+            Last-Modified: Tue, 01 Dec 2009 20:18:22 GMT
+            ETag: "51142bc1-7449-479b075b2891b"
+            Accept-Ranges: bytes
+            Content-Length: 29769
+            Content-Type: text/css
+
+            {data}"""
+            print(response)
+            self.request.sendall(bytearray(response, 'utf-8'))
+            return
 
         # todo(TurnipXenon): clean up and remove the hardcodes
         # Reference: https://developer.mozilla.org/en-US/docs/Web/HTTP/Overview
