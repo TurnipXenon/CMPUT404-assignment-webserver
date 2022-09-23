@@ -1,6 +1,7 @@
 #  coding: utf-8 
 import socketserver
 
+
 # Copyright 2013 Abram Hindle, Eddie Antonio Santos
 # 
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -28,11 +29,36 @@ import socketserver
 
 
 class MyWebServer(socketserver.BaseRequestHandler):
-    
+
     def handle(self):
-        self.data = self.request.recv(1024).strip()
-        print ("Got a request of: %s\n" % self.data)
-        self.request.sendall(bytearray("OK",'utf-8'))
+        data = self.request.recv(1024).strip()
+        print("Got a request of: %s\n" % data)
+        # todo(TurnipXenon): validate
+        data_str = data.decode("utf-8").split("\r\n")
+        # todo(TurnipXenon): validate
+        top_str = data_str[0].split(" ")
+        print(f"Got a request of: {top_str}\n")
+        # todo(TurnipXenon): protect!!!
+        raw_addr = top_str[1]
+        data = None
+        with open(f"www/{raw_addr}", "r") as file:
+            data = file.read()
+
+        # todo(TurnipXenon): clean up and remove the hardcodes
+        # Reference: https://developer.mozilla.org/en-US/docs/Web/HTTP/Overview
+        response = f"""HTTP/1.1 200 OK
+Date: Sat, 09 Oct 2010 14:28:02 GMT
+Server: Apache
+Last-Modified: Tue, 01 Dec 2009 20:18:22 GMT
+ETag: "51142bc1-7449-479b075b2891b"
+Accept-Ranges: bytes
+Content-Length: 29769
+Content-Type: text/css
+
+{data}"""
+        print(response)
+        self.request.sendall(bytearray(response, 'utf-8'))
+
 
 if __name__ == "__main__":
     HOST, PORT = "localhost", 8080
