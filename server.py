@@ -1,6 +1,7 @@
 #  coding: utf-8 
 import socketserver
 from os import path
+from response_maker import ResponseMaker
 
 # Copyright 2013 Abram Hindle, Eddie Antonio Santos
 # 
@@ -26,10 +27,10 @@ from os import path
 # run: python freetests.py
 
 # try: curl -v -X GET http://127.0.0.1:8080/
+import response_maker
 
 
 class MyWebServer(socketserver.BaseRequestHandler):
-
     def handle(self):
         data = self.request.recv(1024).strip()
         print("Got a request of: %s\n" % data)
@@ -38,6 +39,9 @@ class MyWebServer(socketserver.BaseRequestHandler):
         # todo(TurnipXenon): validate
         top_str = data_str[0].split(" ")
         print(f"Got a request of: {top_str}\n")
+        if top_str[0] != "GET":
+            return ""
+
         # todo(TurnipXenon): protect!!!
         raw_addr = top_str[1]
         if raw_addr == "/":
@@ -48,31 +52,17 @@ class MyWebServer(socketserver.BaseRequestHandler):
                 data = file.read()
         else:
             # TODO(TURNIPXENON): fix response!!!
-            response = f"""HTTP/1.1 404 NOT_FOUND
-            Server: Apache
-            Last-Modified: Tue, 01 Dec 2009 20:18:22 GMT
-            ETag: "51142bc1-7449-479b075b2891b"
-            Accept-Ranges: bytes
-            Content-Length: 29769
-            Content-Type: text/css
-
-            {data}"""
+            response = ResponseMaker()\
+                .set_status_code(ResponseMaker.StatusCode.NOT_FOUND)\
+                .generate()
             print(response)
             self.request.sendall(bytearray(response, 'utf-8'))
             return
 
         # todo(TurnipXenon): clean up and remove the hardcodes
-        # Reference: https://developer.mozilla.org/en-US/docs/Web/HTTP/Overview
-        response = f"""HTTP/1.1 200 OK
-Date: Sat, 09 Oct 2010 14:28:02 GMT
-Server: Apache
-Last-Modified: Tue, 01 Dec 2009 20:18:22 GMT
-ETag: "51142bc1-7449-479b075b2891b"
-Accept-Ranges: bytes
-Content-Length: 29769
-Content-Type: text/css
-
-{data}"""
+        response = ResponseMaker()\
+            .set_data(data)\
+            .generate()
         print(response)
         self.request.sendall(bytearray(response, 'utf-8'))
 
