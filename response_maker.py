@@ -1,6 +1,7 @@
 """
 TODO(Turnip): document
 """
+import socketserver
 import datetime
 import sys
 
@@ -18,7 +19,8 @@ Content-Type: {content_type}{data_padding}{data}
     class StatusCode:
         # todo(Turnip): follow the standards
         OK = "200 OK"
-        NOT_FOUND = "404 NOT_FOUND"
+        NOT_FOUND = "404 Not Found"
+        METHOD_NOT_ALLOWED = "405 Method Not Allowed"
 
     def __init__(self):
         self.status_code = ResponseMaker.StatusCode.OK
@@ -40,12 +42,17 @@ Content-Type: {content_type}{data_padding}{data}
         return self
 
     def generate(self) -> str:
-        data_len = sys.getsizeof(self.data.encode('utf-8'))
+        data_len = 0 if self.data == "" else sys.getsizeof(self.data.encode('utf-8'))
         return ResponseMaker.HTTP_TEMPLATE.format(
             status_code=self.status_code,
-            date=datetime.datetime.now().strftime("%a, %d %b %Y %H:%M:%S %Z"), # todo(Turnip): get timezone
+            date=datetime.datetime.now().strftime("%a, %d %b %Y %H:%M:%S %Z"),  # todo(Turnip): get timezone
             content_length=data_len,
             content_type=self.content_type,
             data_padding=("\n\n" if data_len > 0 else ""),
             data=self.data
         )
+
+    def send_all(self, handler: socketserver.BaseRequestHandler):
+        #  todo(Turnip): remove debug here
+        print(self.generate())
+        handler.request.sendall(bytearray(self.generate(), "utf-8"))

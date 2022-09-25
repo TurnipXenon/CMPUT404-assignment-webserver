@@ -40,7 +40,10 @@ class MyWebServer(socketserver.BaseRequestHandler):
         top_str = data_str[0].split(" ")
         print(f"Got a request of: {top_str}\n")
         if top_str[0] != "GET":
-            return ""
+            response = ResponseMaker() \
+                .set_status_code(ResponseMaker.StatusCode.METHOD_NOT_ALLOWED) \
+                .send_all(self)
+            return
 
         # todo(TurnipXenon): protect!!!
         raw_addr = top_str[1]
@@ -52,19 +55,15 @@ class MyWebServer(socketserver.BaseRequestHandler):
                 data = file.read()
         else:
             # TODO(TURNIPXENON): fix response!!!
-            response = ResponseMaker()\
-                .set_status_code(ResponseMaker.StatusCode.NOT_FOUND)\
-                .generate()
-            print(response)
-            self.request.sendall(bytearray(response, 'utf-8'))
+            response = ResponseMaker() \
+                .set_status_code(ResponseMaker.StatusCode.NOT_FOUND) \
+                .send_all(self)
             return
 
         # todo(TurnipXenon): clean up and remove the hardcodes
-        response = ResponseMaker()\
-            .set_data(data)\
-            .generate()
-        print(response)
-        self.request.sendall(bytearray(response, 'utf-8'))
+        response = ResponseMaker() \
+            .set_data(data) \
+            .send_all(self)
 
 
 if __name__ == "__main__":
