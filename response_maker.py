@@ -1,6 +1,7 @@
 """
 TODO(Turnip): document
 """
+import os.path
 import socketserver
 import datetime
 import sys
@@ -9,11 +10,18 @@ import sys
 class ResponseMaker:
     # Reference: https://developer.mozilla.org/en-US/docs/Web/HTTP/Overview
     # todo(Turnip): follow standard better
-    HTTP_TEMPLATE = """HTTP/1.1 {status_code}\r
+    _HTTP_TEMPLATE = """HTTP/1.1 {status_code}\r
 Date: {date}\r
-Content-Length: {content_length}\r
-{location}Content-Type: {content_type}{data_padding}{data}
-"""
+{location}{content_meta}"""
+    _CONTENT_TEMPLATE = """Content-Length: {content_length}\r
+Content-Type: {content_type}
+
+{content}"""
+    _CONTENT_TYPE_MAP = {
+        "css": "text/css",
+        "html": "text/html",
+    }
+
 
     class StatusCode:
         # todo(Turnip): follow the standards
@@ -26,20 +34,29 @@ Content-Length: {content_length}\r
         self.status_code = ResponseMaker.StatusCode.OK
         self.content_length = 0
         self.content_type = "text/css"
-        self.data = ""
+        self.content = ""
+        self.content_meta = ""
         self.location = None
 
     def set_status_code(self, status_code):
         self.status_code = status_code
         return self
 
-    def set_data(self, data: str):
-        self.data = data
-        return self
+    def set_content(self, content: str, raw_addr: str):
+        extension = os.path.splitext(raw_addr)[1].lstrip(".")
+        if extension in ResponseMaker._CONTENT_TYPE_MAP:
+            self.content_type = ResponseMaker._CONTENT_TYPE_MAP[extension]
+        else:
+            self.content_type = extension
+            print(f"Unknown extension type: {extension}")
 
-    def set_content_type(self, content_type):
-        # todo(Turnip): make less hardcoded
-        self.content_type = content_type
+        self.content_length = sys.getsizeof(content.encode('utf-8'))
+        self.content = content
+        self.content_meta = ResponseMaker._CONTENT_TEMPLATE.format(
+            content_length=self.content_length,
+            content_type=self.content_type,
+            content=self.content
+        )
         return self
 
     def set_location(self, location: str):
@@ -48,16 +65,13 @@ Content-Length: {content_length}\r
         return self
 
     def generate(self) -> str:
-        data = "" if self.data is None else self.data
+        data = "" if self.content is None else self.content
         data_len = 0 if len(data) == 0 else sys.getsizeof(data.encode('utf-8'))
-        return ResponseMaker.HTTP_TEMPLATE.format(
+        return ResponseMaker._HTTP_TEMPLATE.format(
             status_code=self.status_code,
             date=datetime.datetime.now().strftime("%a, %d %b %Y %H:%M:%S %Z"),  # todo(Turnip): get timezone
-            content_length=data_len,
             location="" if self.location is None else f"Location: {self.location}\r\n",
-            content_type=self.content_type,
-            data_padding=("\r\n\r\n" if data_len > 0 else ""),
-            data=data
+            content_meta=self.content_meta
         )
 
     def send_all(self, handler: socketserver.BaseRequestHandler):

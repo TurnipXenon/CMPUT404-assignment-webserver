@@ -60,17 +60,14 @@ class MyWebServer(socketserver.BaseRequestHandler):
                 response.set_status_code(ResponseMaker.StatusCode.MOVED_PERMANENTLY)
             elif os.path.isfile(raw_path):
                 with open(raw_path, "r") as file:
-                    data = file.read()
+                    response.set_content(file.read(), raw_path)
         else:
             # TODO(TURNIPXENON): fix response!!!
-            response.set_status_code(ResponseMaker.StatusCode.NOT_FOUND) \
-                .send_all(self)
-            return
+            response.set_status_code(ResponseMaker.StatusCode.NOT_FOUND)
 
         # todo(TurnipXenon): clean up and remove the hardcodes
         # todo(TurnipXenon): don't hardcode the content type
-        response.set_data(data) \
-            .send_all(self)
+        response.send_all(self)
 
 
 if __name__ == "__main__":
