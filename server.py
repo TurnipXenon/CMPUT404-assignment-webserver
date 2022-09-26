@@ -1,4 +1,5 @@
-#  coding: utf-8 
+#  coding: utf-8
+import os.path
 import socketserver
 from os import path
 from response_maker import ResponseMaker
@@ -33,36 +34,42 @@ import response_maker
 class MyWebServer(socketserver.BaseRequestHandler):
     def handle(self):
         data = self.request.recv(1024).strip()
-        print("Got a request of: %s\n" % data)
         # todo(TurnipXenon): validate
         data_str = data.decode("utf-8").split("\r\n")
+
+        response = ResponseMaker()
         # todo(TurnipXenon): validate
         top_str = data_str[0].split(" ")
-        print(f"Got a request of: {top_str}\n")
         if top_str[0] != "GET":
-            response = ResponseMaker() \
-                .set_status_code(ResponseMaker.StatusCode.METHOD_NOT_ALLOWED) \
+            response.set_status_code(ResponseMaker.StatusCode.METHOD_NOT_ALLOWED) \
                 .send_all(self)
             return
 
         # todo(TurnipXenon): protect!!!
         raw_addr = top_str[1]
-        if raw_addr == "/":
-            raw_addr = "/index.html"
+        # todo(Turnip): handle relative vs absolute
+        print(f"Look: {raw_addr}")
+        if len(raw_addr) != 0 and raw_addr[-1] == "/":
+            raw_addr = f"{raw_addr}/index.html"
+
         data = None
-        if path.exists(f"www/{raw_addr}"):
-            with open(f"www/{raw_addr}", "r") as file:
-                data = file.read()
+        raw_path = f"www/{raw_addr}"
+        if path.exists(raw_path):
+            if os.path.isdir(raw_path):
+                response.set_location(raw_path)
+                response.set_status_code(ResponseMaker.StatusCode.MOVED_PERMANENTLY)
+            elif os.path.isfile(raw_path):
+                with open(raw_path, "r") as file:
+                    data = file.read()
         else:
             # TODO(TURNIPXENON): fix response!!!
-            response = ResponseMaker() \
-                .set_status_code(ResponseMaker.StatusCode.NOT_FOUND) \
+            response.set_status_code(ResponseMaker.StatusCode.NOT_FOUND) \
                 .send_all(self)
             return
 
         # todo(TurnipXenon): clean up and remove the hardcodes
-        response = ResponseMaker() \
-            .set_data(data) \
+        # todo(TurnipXenon): don't hardcode the content type
+        response.set_data(data) \
             .send_all(self)
 
 
