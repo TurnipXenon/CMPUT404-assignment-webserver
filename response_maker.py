@@ -48,7 +48,7 @@ Content-Type: {content_type}
             self.content_type = ResponseMaker._CONTENT_TYPE_MAP[extension]
         else:
             self.content_type = extension
-            print(f"Unknown extension type: {extension}")
+            print(f"Unknown extension type: {extension}; Content: \n{content}")
 
         self.content_length = sys.getsizeof(content.encode('utf-8'))
         self.content = content
@@ -75,6 +75,5 @@ Content-Type: {content_type}
         )
 
     def send_all(self, handler: socketserver.BaseRequestHandler):
-        #  todo(Turnip): remove debug here
-        print(self.generate())
+        # print(self.generate())
         handler.request.sendall(bytearray(self.generate(), "utf-8"))

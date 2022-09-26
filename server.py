@@ -48,13 +48,18 @@ class MyWebServer(socketserver.BaseRequestHandler):
         # todo(TurnipXenon): protect!!!
         raw_addr = top_str[1]
         # todo(Turnip): handle relative vs absolute
-        print(f"Look: {raw_addr}")
         if len(raw_addr) != 0 and raw_addr[-1] == "/":
             raw_addr = f"{raw_addr}/index.html"
 
         data = None
         raw_path = f"www/{raw_addr}"
-        if path.exists(raw_path):
+
+        # validate not doing going out -.-
+        abs_path = os.path.abspath(raw_path)
+        curr_path = os.path.abspath("www/")
+        if not abs_path.startswith(curr_path):
+            response.set_status_code(ResponseMaker.StatusCode.NOT_FOUND)
+        elif path.exists(raw_path):
             if os.path.isdir(raw_path):
                 response.set_location(raw_path, self.server.server_address)
                 response.set_status_code(ResponseMaker.StatusCode.MOVED_PERMANENTLY)
