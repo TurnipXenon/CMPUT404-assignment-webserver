@@ -56,7 +56,7 @@ class MyWebServer(socketserver.BaseRequestHandler):
         raw_path = f"www/{raw_addr}"
         if path.exists(raw_path):
             if os.path.isdir(raw_path):
-                response.set_location(raw_path)
+                response.set_location(raw_path, self.server.server_address)
                 response.set_status_code(ResponseMaker.StatusCode.MOVED_PERMANENTLY)
             elif os.path.isfile(raw_path):
                 with open(raw_path, "r") as file:

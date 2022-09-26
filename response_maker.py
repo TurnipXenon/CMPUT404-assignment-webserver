@@ -59,9 +59,9 @@ Content-Type: {content_type}
         )
         return self
 
-    def set_location(self, location: str):
+    def set_location(self, location: str, server_address: (str, int)):
         stripped_location = location.lstrip("www/").rstrip("index.html/").rstrip("index.html")
-        self.location = f"/{stripped_location}/"
+        self.location = f"http://{server_address[0]}:{server_address[1]}/{stripped_location}/"
         return self
 
     def generate(self) -> str:
