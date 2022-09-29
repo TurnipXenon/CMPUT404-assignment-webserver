@@ -4,6 +4,7 @@ import socketserver
 from os import path
 from response_maker import ResponseMaker
 
+
 # Copyright 2013 Abram Hindle, Eddie Antonio Santos
 # 
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -63,8 +64,14 @@ class MyWebServer(socketserver.BaseRequestHandler):
                 response.set_location(raw_path, self.server.server_address)
                 response.set_status_code(ResponseMaker.StatusCode.MOVED_PERMANENTLY)
             elif os.path.isfile(raw_path):
-                with open(raw_path, "r") as file:
-                    response.set_content(file.read(), raw_path)
+                # we might be serving a file we don't support but let's try anyway
+                # if it fails, let just return a 404
+                try:
+                    with open(raw_path, "r") as file:
+                        response.set_content(file.read(), raw_path)
+                except:
+                    print(f"Failed to decode non-text data at: {raw_path}")
+                    response.set_status_code(ResponseMaker.StatusCode.NOT_FOUND)
         else:
             # TODO(TURNIPXENON): fix response!!!
             response.set_status_code(ResponseMaker.StatusCode.NOT_FOUND)
