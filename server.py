@@ -28,7 +28,6 @@ from response_maker import ResponseMaker
 # run: python freetests.py
 
 # try: curl -v -X GET http://127.0.0.1:8080/
-import response_maker
 
 
 class MyWebServer(socketserver.BaseRequestHandler):

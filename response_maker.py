@@ -13,13 +13,13 @@ class ResponseMaker:
     _HTTP_TEMPLATE = """HTTP/1.1 {status_code}\r
 Date: {date}\r
 {location}{content_meta}"""
-    _CONTENT_TEMPLATE = """Content-Length: {content_length}\r
-Content-Type: {content_type}
+    _CONTENT_TEMPLATE = """Content-Type: {content_type}
 
 {content}"""
     _CONTENT_TYPE_MAP = {
         "css": "text/css",
-        "html": "text/html",
+        "htm": "text/html; charset=utf-8",
+        "html": "text/html; charset=utf-8",
     }
 
 
@@ -53,7 +53,6 @@ Content-Type: {content_type}
         self.content_length = sys.getsizeof(content.encode('utf-8'))
         self.content = content
         self.content_meta = ResponseMaker._CONTENT_TEMPLATE.format(
-            content_length=self.content_length,
             content_type=self.content_type,
             content=self.content
         )
