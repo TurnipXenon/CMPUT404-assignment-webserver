@@ -22,7 +22,6 @@ Date: {date}\r
         "html": "text/html; charset=utf-8",
     }
 
-
     class StatusCode:
         # todo(Turnip): follow the standards
         OK = "200 OK"
@@ -58,14 +57,30 @@ Date: {date}\r
         )
         return self
 
+    # from https://stackoverflow.com/a/16891418/17836168
+    @staticmethod
+    def remove_prefix(text: str, prefix: str):
+        if text.startswith(prefix):
+            return text[len(prefix):]
+        return text
+
+    # from https://stackoverflow.com/a/16891418/17836168
+    @staticmethod
+    def remove_suffix(text: str, suffix: str):
+        if text.endswith(suffix):
+            return text[:len(suffix)]
+        return text
+
     def set_location(self, location: str, server_address: (str, int)):
-        stripped_location = location.lstrip("www/").rstrip("index.html/").rstrip("index.html")
+        stripped_location = self.remove_prefix(location, "www/")
+        stripped_location = self.remove_suffix(stripped_location, "index.html/")
+        stripped_location = self.remove_suffix(stripped_location, "index.html")
+        stripped_location = stripped_location.lstrip("/")
         self.location = f"http://{server_address[0]}:{server_address[1]}/{stripped_location}/"
         return self
 
     def generate(self) -> str:
         data = "" if self.content is None else self.content
-        data_len = 0 if len(data) == 0 else sys.getsizeof(data.encode('utf-8'))
         return ResponseMaker._HTTP_TEMPLATE.format(
             status_code=self.status_code,
             date=datetime.datetime.now().strftime("%a, %d %b %Y %H:%M:%S %Z"),  # todo(Turnip): get timezone

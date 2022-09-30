@@ -32,27 +32,63 @@ from response_maker import ResponseMaker
 
 
 class MyWebServer(socketserver.BaseRequestHandler):
+    @classmethod
+    def decode_hex(cls, hex_str: str):
+        # from https://stackoverflow.com/questions/5649407/hexadecimal-string-to-byte-array-in-python
+        hex_byte = bytearray.fromhex(hex_str) # bytes.fromhex(f"{hex_str}")
+        return hex_byte.decode("utf-8")
+
+    @classmethod
+    def decode_percent_encoded_str(cls, encoded_str: str):
+        # Parse code
+        split_path = encoded_str.split("%")
+
+        decoded = ""
+        is_first = True
+        full_code = ""
+        getting_full_code = False
+        for to_parse in split_path:
+            if is_first:
+                is_first = False
+                decoded += to_parse
+                continue
+
+            if len(to_parse) == 2:
+                getting_full_code = True
+                full_code += to_parse
+            elif getting_full_code:
+                getting_full_code = False
+                full_code += to_parse[:2]
+                decoded += MyWebServer.decode_hex(full_code)
+                decoded += to_parse[2:]
+                full_code = ""
+            else:
+                code = to_parse[:2]
+                decoded += MyWebServer.decode_hex(code)
+                decoded += to_parse[2:]
+
+        if getting_full_code:
+            decoded += MyWebServer.decode_hex(full_code)
+
+        return decoded
+
     def handle(self):
         data = self.request.recv(1024).strip()
-        # todo(TurnipXenon): validate
         data_str = data.decode("utf-8").split("\r\n")
 
         response = ResponseMaker()
-        # todo(TurnipXenon): validate
         top_str = data_str[0].split(" ")
         if top_str[0] != "GET":
             response.set_status_code(ResponseMaker.StatusCode.METHOD_NOT_ALLOWED) \
                 .send_all(self)
             return
 
-        # todo(TurnipXenon): protect!!!
         raw_addr = top_str[1]
-        # todo(Turnip): handle relative vs absolute
-        if len(raw_addr) != 0 and raw_addr[-1] == "/":
-            raw_addr = f"{raw_addr}/index.html"
+        encoded_addr = MyWebServer.decode_percent_encoded_str(raw_addr)
+        if len(encoded_addr) != 0 and encoded_addr[-1] == "/":
+            encoded_addr = f"{encoded_addr}/index.html"
 
-        data = None
-        raw_path = f"www/{raw_addr}"
+        raw_path = f"www/{encoded_addr}"
 
         # validate not doing going out -.-
         abs_path = os.path.abspath(raw_path)
@@ -61,7 +97,7 @@ class MyWebServer(socketserver.BaseRequestHandler):
             response.set_status_code(ResponseMaker.StatusCode.NOT_FOUND)
         elif path.exists(raw_path):
             if os.path.isdir(raw_path):
-                response.set_location(raw_path, self.server.server_address)
+                response.set_location(f"www/{raw_addr}", self.server.server_address)
                 response.set_status_code(ResponseMaker.StatusCode.MOVED_PERMANENTLY)
             elif os.path.isfile(raw_path):
                 # we might be serving a file we don't support but let's try anyway
@@ -73,11 +109,8 @@ class MyWebServer(socketserver.BaseRequestHandler):
                     print(f"Failed to decode non-text data at: {raw_path}")
                     response.set_status_code(ResponseMaker.StatusCode.NOT_FOUND)
         else:
-            # TODO(TURNIPXENON): fix response!!!
             response.set_status_code(ResponseMaker.StatusCode.NOT_FOUND)
 
-        # todo(TurnipXenon): clean up and remove the hardcodes
-        # todo(TurnipXenon): don't hardcode the content type
         response.send_all(self)
 
 
